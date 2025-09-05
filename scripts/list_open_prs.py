@@ -12,7 +12,8 @@ from typer import Typer
 logger = logging.getLogger(__name__)
 app = Typer()
 
-SLACK_WEBHOOK_URL = os.environ.get("SLACK_WEBHOOK_URL", "")
+SLACK_WEBHOOK_URL = os.environ["SLACK_WEBHOOK_URL"]
+REPO_NAME = os.environ["REPO_NAME"]
 
 webhook = WebhookClient(SLACK_WEBHOOK_URL)
 now = datetime.datetime.now()
@@ -32,13 +33,14 @@ def parse_prs(
 
 def open_prs(
     prs: list[dict],
+    repo: str = REPO_NAME,
 ) -> None:
     """Post message about open prs."""
     blocks = [
         {
             "text": {
                 "type": "mrkdwn",
-                "text": ":alert: :wave: Hi there! <!channel> Today's Open PRs:",
+                "text": f":alert: :wave: Hi there! <!channel> Today's Open PRs in {repo}:",
             },
             "type": "section",
         },
