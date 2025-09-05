@@ -65,7 +65,7 @@ def open_prs(
         # You will get a SlackApiError if "ok" is False
         error_message = e.response["error"]
         logger.error(error_message)
-        raise error_message from SlackApiError
+        raise
 
 
 @app.command()

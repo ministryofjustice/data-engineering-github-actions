@@ -15,7 +15,7 @@ jobs:
             - name: Setup UV
               uses: astral-sh/setup-uv@v6
 
-            - name: Set up Python
+            - name: Set up Pythona
 
               run: uv python install
 

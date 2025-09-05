@@ -1,0 +1,26 @@
+---
+on:
+    workflow_call:
+        inputs:
+            uv_test_group_name:
+                type: string
+                default: test
+
+jobs:
+    list-open-prs:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repo
+              uses: actions/checkout@v4.2.2
+
+            - name: Setup UV
+              uses: astral-sh/setup-uv@v6
+
+            - name: Set up Python
+              run: uv python install
+
+            - name: Install the project
+              run: uv sync --group ${{  inputs.uv_test_group_name  }}
+
+            - name: Run tests
+              run: uv run pytest/tests/unit/ --vv

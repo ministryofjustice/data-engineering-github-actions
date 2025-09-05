@@ -12,4 +12,4 @@ jobs:
         permissions:
             contents: read
         uses:
-            ./.github/workflows/resuable-list-open-prs.yml
+            ./.github/workflows/reusable-list-open-prs.yml
