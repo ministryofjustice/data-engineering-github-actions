@@ -1,0 +1,11 @@
+[project]
+name = "data-engineering-github-actions"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "humanize>=4.13.0",
+    "slack-sdk>=3.36.0",
+    "typer>=0.17.3",
+]
