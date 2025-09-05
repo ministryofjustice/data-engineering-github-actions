@@ -8,6 +8,8 @@ on:
             - opened
             - reopened
             - synchronize
+        paths:
+            - '**/*.py'
 
 jobs:
     lint_python:
@@ -15,4 +17,3 @@ jobs:
         permissions:
             contents: read
         uses: ./.github/workflows/resusable-python-lint.yml
-        
