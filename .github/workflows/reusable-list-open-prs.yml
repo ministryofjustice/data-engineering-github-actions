@@ -4,6 +4,9 @@ on:
       inputs:
         tag:
           type: string
+      secrets:
+        slack_workflow_url:
+          required: true
 
 jobs:
     list-open-prs:
@@ -30,7 +33,7 @@ jobs:
 
             - name: Alert Slack
               env:
-                  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+                  SLACK_WEBHOOK_URL: ${{ secrets.slack_workflow_url }}
                   REPO_NAME: ${{ github.event.repository.name }}"
               run: |
                   uv run scripts/list_open_prs.py
