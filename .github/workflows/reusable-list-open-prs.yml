@@ -34,7 +34,7 @@ jobs:
       - name: Setup UV
         uses: astral-sh/setup-uv@v6
         with:
-          working-directory: .data-engineering-github-actions/
+          working-directory: ./data-engineering-github-actions
 
       - name: Set up Python
         run: uv python install
