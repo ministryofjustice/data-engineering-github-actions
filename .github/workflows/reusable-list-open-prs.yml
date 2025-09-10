@@ -46,9 +46,8 @@ jobs:
       - name: Get Open PRs
         env:
           GH_TOKEN: ${{ github.token }}
-        working-directory: ./data-engineering-github-actions
         run: |
-          gh pr list --json title,url,createdAt > "prs.json"
+          gh pr list --json title,url,createdAt > "./data-engineering-github-actions/prs.json"
 
       - name: Alert Slack
         if: ${{ inputs.dry_run == false }}
