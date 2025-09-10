@@ -1,39 +1,53 @@
----
+name: List Open PRs
+
 on:
-    workflow_call:
-      inputs:
-        tag:
-          type: string
-      secrets:
-        slack_workflow_url:
-          required: true
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        description: "Git ref (branch, tag, or commit) to checkout. Defaults to the repo's default branch if not provided."
+      dry_run:
+        type: boolean
+        default: false
+        description: "If true, workflow prints PRs to logs instead of sending Slack alerts."
+  
+    secrets:
+      slack_workflow_url:
+        required: true
+        description: "Slack Incoming Webhook URL used to send alerts."
 
 jobs:
-    list-open-prs:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout repo
-              uses: actions/checkout@v5.0.0
+  list-open-prs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5.0.0
 
-            - name: Setup UV
-              uses: astral-sh/setup-uv@v6
+      - name: Setup UV
+        uses: astral-sh/setup-uv@v6
 
-            - name: Set up Pythona
+      - name: Set up Python
+        run: uv python install
 
-              run: uv python install
+      - name: Install the project
+        run: uv sync
 
-            - name: Install the project
-              run: uv sync
+      - name: Get Open PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr list --json title,url,createdAt > "prs.json"
 
-            - name: Get Open PRs
-              env:
-                  GH_TOKEN: ${{ github.token }}
-              run: |
-                  gh pr list --json title,url,createdAt > "prs.json"
+      - name: Alert Slack
+        if: ${{ inputs.dry_run == false }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.slack_workflow_url }}
+          REPO_NAME: ${{ github.event.repository.name }}
+        run: |
+          uv run scripts/list_open_prs.py
 
-            - name: Alert Slack
-              env:
-                  SLACK_WEBHOOK_URL: ${{ secrets.slack_workflow_url }}
-                  REPO_NAME: ${{ github.event.repository.name }}"
-              run: |
-                  uv run scripts/list_open_prs.py
+      - name: Dry Run - Show PRs in action logs only (no Slack alert)
+        if: ${{ inputs.dry_run }}
+        run: |
+          echo "Dry run mode ON. Printing PRs instead of sending to Slack:"
+          cat prs.json
