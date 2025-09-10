@@ -31,26 +31,28 @@ jobs:
           ref: main
           token: ${{ github.token }}
 
-      - name: Change dir to DE actions
-        run: cd data-engineering-github-actions
-
       - name: Setup UV
         uses: astral-sh/setup-uv@v6
+        with:
+          working-directory: .data-engineering-github-actions/
 
       - name: Set up Python
         run: uv python install
 
       - name: Install the project
+        working-directory: .data-engineering-github-actions/
         run: uv sync
 
       - name: Get Open PRs
         env:
           GH_TOKEN: ${{ github.token }}
+        working-directory: .data-engineering-github-actions/
         run: |
           gh pr list --json title,url,createdAt > "prs.json"
 
       - name: Alert Slack
         if: ${{ inputs.dry_run == false }}
+        working-directory: .data-engineering-github-actions/
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.slack_workflow_url }}
           REPO_NAME: ${{ github.event.repository.name }}
@@ -59,6 +61,7 @@ jobs:
 
       - name: Dry Run - Show PRs in action logs only (no Slack alert)
         if: ${{ inputs.dry_run }}
+        working-directory: .data-engineering-github-actions/
         run: |
           echo "Dry run mode ON. Printing PRs instead of sending to Slack:"
           cat prs.json
