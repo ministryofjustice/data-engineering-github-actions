@@ -12,15 +12,25 @@ jobs:
     list-open-prs:
         runs-on: ubuntu-latest
         steps:
+            - name: Checkout Scripts Repo
+              uses: actions/checkout@v5.0.0
+              with:
+                repository: ministryofjustice/data-engineering-github-actions
+                path: data-engineering-github-actions
+                ref: main
+                token: ${{ github.token }}
+
             - name: Checkout repo
               uses: actions/checkout@v5.0.0
 
             - name: Setup UV
               uses: astral-sh/setup-uv@v6
 
-            - name: Set up Pythona
-
+            - name: Set up Python
               run: uv python install
+
+            - name: Change dir to DE actions
+              run: cd data-engineering-github-actions
 
             - name: Install the project
               run: uv sync
