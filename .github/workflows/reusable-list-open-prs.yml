@@ -47,10 +47,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          echo "${{ github.token }}" | gh auth login --with-token
           gh pr list \
-            --repo "${{ github.repository }}" \
-            --state open \
             --search "-is:draft" \
             --json number,title,url,author,createdAt,updatedAt,isDraft \
             > "./data-engineering-github-actions/prs.json"
