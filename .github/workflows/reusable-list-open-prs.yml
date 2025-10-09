@@ -47,7 +47,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh pr list --json title,url,createdAt > "./data-engineering-github-actions/prs.json"
+          echo "${{ github.token }}" | gh auth login --with-token
+          gh pr list \
+            --repo "${{ github.repository }}" \
+            --state open \
+            --search "-is:draft" \
+            --json number,title,url,author,createdAt,updatedAt,isDraft \
+            > "./data-engineering-github-actions/prs.json"
 
       - name: Alert Slack
         if: ${{ inputs.dry_run == false }}
