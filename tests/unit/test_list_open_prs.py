@@ -48,7 +48,9 @@ def test_parse_prs(monkeypatch, fake_prs_file):
 def test_open_prs_success(monkeypatch, ):
     import scripts.list_open_prs as lop
 
-    mock_send = lambda **kwargs: SimpleNamespace(status_code=200, body="ok")
+    def mock_send(**kwargs):
+        return SimpleNamespace(status_code=200, body="ok")
+
     monkeypatch.setattr(lop.webhook, "send", mock_send)
 
     prs = [
@@ -65,7 +67,6 @@ def test_open_prs_success(monkeypatch, ):
 def test_open_prs_failure(monkeypatch, caplog):
     import scripts.list_open_prs as lop
 
-    fake_response = {"error": "invalid_auth"}
     fake_error = SlackApiError("Slack API error", response=FakeResponse())
 
 
