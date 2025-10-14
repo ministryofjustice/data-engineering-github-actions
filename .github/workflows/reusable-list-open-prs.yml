@@ -5,7 +5,7 @@ on:
     inputs:
       tag:
         type: string
-        description: "Git ref (branch, tag, or commit) to checkout. Defaults to the repo's default branch if not provided."
+        description: "Tag to filter PRs on, also known as a label."
       dry_run:
         type: boolean
         default: false
@@ -22,6 +22,15 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v5.0.0
+
+      - name: Construct Query
+        id: construct-query
+        run: |
+          if [ -n "${{ inputs.tag }}" ]; then
+            echo "query=-is:draft" >> $GITHUB_OUTPUT
+          else
+            echo "query=-is:draft label:${{ inputs.tag }}"" >> $GITHUB_OUTPUT
+          fi
 
       - name: Checkout Scripts Repo
         uses: actions/checkout@v5.0.0
@@ -48,7 +57,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh pr list \
-            --search "-is:draft" \
+            --search ${{ steps.construct-query.outputs.query }} \
             --json number,title,url,author,createdAt,updatedAt,isDraft \
             > "./data-engineering-github-actions/prs.json"
 
