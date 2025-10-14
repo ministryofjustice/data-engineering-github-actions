@@ -29,7 +29,7 @@ jobs:
           if [ -n "${{ inputs.tag }}" ]; then
             echo "query=-is:draft" >> $GITHUB_OUTPUT
           else
-            echo "query=-is:draft label:${{ inputs.tag }}"" >> $GITHUB_OUTPUT
+            echo "query=-is:draft label:${{ inputs.tag }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Checkout Scripts Repo
