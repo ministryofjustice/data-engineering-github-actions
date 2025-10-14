@@ -27,9 +27,9 @@ jobs:
         id: construct-query
         run: |
           if [ -n "${{ inputs.tag }}" ]; then
-            echo "query=-is:draft" >> $GITHUB_OUTPUT
-          else
             echo "query=-is:draft label:${{ inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "query=-is:draft" >> $GITHUB_OUTPUT
           fi
 
       - name: Checkout Scripts Repo
