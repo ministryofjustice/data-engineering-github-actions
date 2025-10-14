@@ -41,7 +41,7 @@ jobs:
           token: ${{ github.token }}
 
       - name: Setup UV
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
         with:
           working-directory: ./data-engineering-github-actions
 
