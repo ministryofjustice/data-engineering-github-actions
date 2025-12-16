@@ -1,18 +1,25 @@
-import json
+"""Test list open prs functions."""
 import datetime
-import pytest
+import json
+from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
 from slack_sdk.errors import SlackApiError
 
 
 class FakeResponse:
-    def __getitem__(self, key):
+    """Fake bad response for the open prs."""
+
+    def __getitem__(self, key: str) -> str:
+        """Return error."""
         return {"error": "invalid_auth"}[key]
 
+
 @pytest.fixture
-def fake_prs_file(tmp_path):
-    created_at = (datetime.datetime(2025, 9, 3, 12, 0, 0)).strftime("%Y-%m-%dT%H:%M:%SZ")
+def fake_prs_file(tmp_path: Path) -> tuple[Path, dict[any, str]]:
+    """Fake files for open PRs."""
+    created_at = (datetime.datetime(2025, 9, 3, 12, 0, 0, tzinfo=datetime.UTC)).strftime("%Y-%m-%dT%H:%M:%SZ")
     prs_data = [
         {
             "title": "Fix bug",
@@ -26,17 +33,20 @@ def fake_prs_file(tmp_path):
 
 
 @pytest.fixture
-def _fake_env(monkeypatch):
+def _fake_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Mock env vars."""
     monkeypatch.setenv("SLACK_WEBHOOK_URL", "https://hooks.slack.fake/test123")
     monkeypatch.setenv("REPO_NAME", "fake-repo")
 
+
 @pytest.mark.usefixtures("_fake_env")
-def test_parse_prs(monkeypatch, fake_prs_file):
+def test_parse_prs(monkeypatch: pytest.MonkeyPatch, fake_prs_file: Path) -> None:
+    """Test parse PRs function."""
     import scripts.list_open_prs as lop
 
-    monkeypatch.setattr(lop, "now", datetime.datetime(2025, 9, 5, 12, 0, 0))
+    monkeypatch.setattr(lop, "now", datetime.datetime(2025, 9, 5, 12, 0, 0, tzinfo=datetime.UTC))
 
-    monkeypatch.setattr(lop.humanize, "naturaldelta", lambda td: "2 days")
+    monkeypatch.setattr(lop.humanize, "naturaldelta", lambda _td: "2 days")
 
     prs_path, _ = fake_prs_file
     result = lop.parse_prs(str(prs_path))
@@ -44,11 +54,17 @@ def test_parse_prs(monkeypatch, fake_prs_file):
     assert result[0]["openFor"] == "2 days"
     assert "title" in result[0]
 
+
 @pytest.mark.usefixtures("_fake_env")
-def test_open_prs_success(monkeypatch, ):
+def test_open_prs_success(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test succesful post of PR message to slack."""
     import scripts.list_open_prs as lop
 
-    mock_send = lambda **kwargs: SimpleNamespace(status_code=200, body="ok")
+    def mock_send(**_kwargs: object) -> SimpleNamespace:
+        """Mock send message."""
+        return SimpleNamespace(status_code=200, body="ok")
     monkeypatch.setattr(lop.webhook, "send", mock_send)
 
     prs = [
@@ -61,15 +77,15 @@ def test_open_prs_success(monkeypatch, ):
 
     lop.open_prs(prs)
 
+
 @pytest.mark.usefixtures("_fake_env")
-def test_open_prs_failure(monkeypatch, caplog):
+def test_open_prs_failure(monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
+    """Test failure to post a PR message."""
     import scripts.list_open_prs as lop
 
-    fake_response = {"error": "invalid_auth"}
     fake_error = SlackApiError("Slack API error", response=FakeResponse())
 
-
-    monkeypatch.setattr(lop.webhook, "send", lambda **kwargs: (_ for _ in ()).throw(fake_error))
+    monkeypatch.setattr(lop.webhook, "send", lambda **_kwargs: (_ for _ in ()).throw(fake_error))
 
     prs = [
         {
@@ -79,8 +95,7 @@ def test_open_prs_failure(monkeypatch, caplog):
         }
     ]
 
-    with caplog.at_level("ERROR"):
-        with pytest.raises(SlackApiError):
-            lop.open_prs(prs)
+    with caplog.at_level("ERROR"), pytest.raises(SlackApiError):
+        lop.open_prs(prs)
 
     assert "invalid_auth" in caplog.text
