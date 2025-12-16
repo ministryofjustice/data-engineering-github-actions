@@ -14,7 +14,7 @@ class FakeResponse:
 @pytest.fixture
 def mock_send(**kwargs):
     """Mock okay response."""
-    return SimpleNamespace(status_code=200, body="ok")
+    return SimpleNamespace(status_code=200, body="ok", **kwargs)
 
 
 @pytest.fixture
