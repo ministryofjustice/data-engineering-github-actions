@@ -1,4 +1,5 @@
 """Take PRs in repo, calculate time open for and post to slack."""
+
 import datetime
 import json
 import logging

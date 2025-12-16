@@ -1,4 +1,5 @@
 """Test list open prs functions."""
+
 import datetime
 import json
 from pathlib import Path
@@ -65,6 +66,7 @@ def test_open_prs_success(
     def mock_send(**_kwargs: object) -> SimpleNamespace:
         """Mock send message."""
         return SimpleNamespace(status_code=200, body="ok")
+
     monkeypatch.setattr(lop.webhook, "send", mock_send)
 
     prs = [
