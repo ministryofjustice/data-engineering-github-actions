@@ -10,7 +10,7 @@ on:
             - synchronize
 
 jobs:
-    pytho-unit-test:
+    python-unit-test:
         name: Python Unit Test
         permissions:
             contents: read
