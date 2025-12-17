@@ -1,28 +1,26 @@
+---
 name: List Open PRs
-
 on:
   workflow_call:
     inputs:
       tag:
         type: string
-        description: "Tag to filter PRs on, also known as a label."
+        description: Tag to filter PRs on, also known as a label.
       dry_run:
         type: boolean
         default: false
-        description: "If true, workflow prints PRs to logs instead of sending Slack alerts."
-  
+        description: If true, workflow prints PRs to logs instead of sending Slack
+          alerts.
     secrets:
       slack_workflow_url:
         required: true
-        description: "Slack Incoming Webhook URL used to send alerts."
-
+        description: Slack Incoming Webhook URL used to send alerts.
 jobs:
   list-open-prs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6.0.1
-
       - name: Construct Query
         id: construct-query
         run: |
@@ -31,7 +29,6 @@ jobs:
           else
             echo "query=\"-is:draft\"" >> $GITHUB_OUTPUT
           fi
-
       - name: Checkout Scripts Repo
         uses: actions/checkout@v6.0.1
         with:
@@ -39,19 +36,15 @@ jobs:
           path: data-engineering-github-actions
           ref: main
           token: ${{ github.token }}
-
       - name: Setup UV
         uses: astral-sh/setup-uv@v7
         with:
           working-directory: ./data-engineering-github-actions
-
       - name: Set up Python
         run: uv python install
-
       - name: Install the project
         working-directory: ./data-engineering-github-actions
         run: uv sync
-
       - name: Get Open PRs
         env:
           GH_TOKEN: ${{ github.token }}
@@ -60,7 +53,6 @@ jobs:
             --search ${{ steps.construct-query.outputs.query }} \
             --json number,title,url,author,createdAt,updatedAt,isDraft \
             > "./data-engineering-github-actions/prs.json"
-
       - name: Alert Slack
         if: ${{ inputs.dry_run == false }}
         working-directory: ./data-engineering-github-actions
@@ -69,10 +61,9 @@ jobs:
           REPO_NAME: ${{ github.event.repository.name }}
         run: |
           uv run scripts/list_open_prs.py
-
       - name: Dry Run - Show PRs in action logs only (no Slack alert)
         if: ${{ inputs.dry_run }}
         working-directory: ./data-engineering-github-actions
-        run: |
+        run: |-
           echo "Dry run mode ON. Printing PRs instead of sending to Slack:"
           cat prs.json
