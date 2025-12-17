@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@v6
 
       - name: Run Prek
         uses: j178/prek-action@v1
