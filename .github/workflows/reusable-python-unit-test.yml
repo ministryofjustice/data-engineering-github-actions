@@ -6,7 +6,7 @@ on:
         type: string
         default: test
 jobs:
-  list-open-prs:
+  python-unit-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
