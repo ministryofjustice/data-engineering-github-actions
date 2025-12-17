@@ -2,6 +2,7 @@
 
 import datetime
 import json
+from collections.abc import Callable
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -18,18 +19,18 @@ class FakeResponse:
 
 
 @pytest.fixture
-def mock_send():
-    def _mock_send(*args, **kwargs):
+def mock_send() -> Callable[..., SimpleNamespace]:
+    """Mock send slack message success."""
+    def _mock_send(*_args: object, **_kwargs: object) -> SimpleNamespace:
+        """Mock send slack message success."""
         return SimpleNamespace(status_code=200, body="ok")
-
     return _mock_send
 
 
 @pytest.fixture
-def fake_prs_file(tmp_path):
-    created_at = (datetime.datetime(2025, 9, 3, 12, 0, 0)).strftime(
-        "%Y-%m-%dT%H:%M:%SZ"
-    )
+def fake_prs_file(tmp_path: Path) -> tuple[Path, list[dict[str, any]]]:
+    """Fake output PR file."""
+    created_at = (datetime.datetime(2025, 9, 3, 12, 0, 0, tzinfo=datetime.UTC)).strftime("%Y-%m-%dT%H:%M:%SZ")
     prs_data = [
         {
             "title": "Fix bug",
@@ -67,9 +68,10 @@ def test_parse_prs(monkeypatch: pytest.MonkeyPatch, fake_prs_file: Path) -> None
 
 @pytest.mark.usefixtures("_fake_env")
 def test_open_prs_success(
-    monkeypatch,
-    mock_send,
-):
+    monkeypatch: pytest.MonkeyPatch,
+    mock_send: Callable[..., SimpleNamespace],
+) -> None:
+    """Test happy path for listing open prs."""
     import scripts.list_open_prs as lop
 
     monkeypatch.setattr(lop.webhook, "send", mock_send)
@@ -92,9 +94,7 @@ def test_open_prs_failure(monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCap
 
     fake_error = SlackApiError("Slack API error", response=FakeResponse())
 
-    monkeypatch.setattr(
-        lop.webhook, "send", lambda **kwargs: (_ for _ in ()).throw(fake_error)
-    )
+    monkeypatch.setattr(lop.webhook, "send", lambda **_kwargs: (_ for _ in ()).throw(fake_error))
 
     prs = [
         {
