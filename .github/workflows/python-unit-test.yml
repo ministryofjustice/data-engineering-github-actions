@@ -1,18 +1,11 @@
 ---
 name: Python Unit Test
-
 on:
-    pull_request:
-        types:
-            - edited
-            - opened
-            - reopened
-            - synchronize
-
+  pull_request:
+    types: [edited, opened, reopened, synchronize]
 jobs:
-    pytho-unit-test:
-        name: Python Unit Test
-        permissions:
-            contents: read
-        uses:
-            ./.github/workflows/reusable-python-unit-test.yml
+  pytho-unit-test:
+    name: Python Unit Test
+    permissions:
+      contents: read
+    uses: ./.github/workflows/reusable-python-unit-test.yml

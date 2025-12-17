@@ -1,23 +1,18 @@
 ---
 on:
-    workflow_call:
-        inputs:
-            uv_test_group_name:
-                type: string
-                default: test
-
+  workflow_call:
+    inputs:
+      uv_test_group_name:
+        type: string
+        default: test
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-
-
       - name: Setup UV
         uses: astral-sh/setup-uv@v7
-
       - name: Set up Python
         run: uv python install
-
       - name: Lint YAML files
         run: uvx yamllint .
