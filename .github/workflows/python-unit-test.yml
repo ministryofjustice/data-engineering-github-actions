@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [edited, opened, reopened, synchronize]
 jobs:
-  pytho-unit-test:
+  python-unit-test:
     name: Python Unit Test
     permissions:
       contents: read

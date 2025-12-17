@@ -1,0 +1,13 @@
+---
+on:
+  workflow_call:
+
+jobs:
+  prek:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6.0.1
+
+      - name: Run Prek
+        uses: j178/prek-action@v1
