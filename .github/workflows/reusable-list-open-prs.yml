@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@v6
       - name: Construct Query
         id: construct-query
         run: |
@@ -30,7 +30,7 @@ jobs:
             echo "query=\"-is:draft\"" >> $GITHUB_OUTPUT
           fi
       - name: Checkout Scripts Repo
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@v6
         with:
           repository: ministryofjustice/data-engineering-github-actions
           path: data-engineering-github-actions
