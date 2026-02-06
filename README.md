@@ -112,6 +112,8 @@ jobs:
 
 Runs Python unit tests using pytest with [uv](https://github.com/astral-sh/uv) for dependency management.
 
+> **Note:** This workflow does not support matrix testing across multiple Python versions. It uses `uv python install` which installs the Python version specified by the `requires-python` field in your project's `pyproject.toml`. Tests will run against a single Python version only.
+
 **Inputs:**
 
 | Name | Type | Required | Default | Description |
