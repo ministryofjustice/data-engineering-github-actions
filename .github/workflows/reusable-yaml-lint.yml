@@ -5,7 +5,7 @@ on:
       uv_lint_group_name:
         type: string
         default: ""
-        description: Optional uv dependency group name. If provided, runs uv sync with this group before linting.
+        description: Optional uv dependency group name.
 jobs:
   lint:
     runs-on: ubuntu-latest
