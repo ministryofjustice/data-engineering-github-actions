@@ -2,9 +2,10 @@
 on:
   workflow_call:
     inputs:
-      uv_test_group_name:
+      uv_lint_group_name:
         type: string
-        default: test
+        default: ""
+        description: Optional uv dependency group name. If provided, runs uv sync with this group before linting.
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -14,5 +15,14 @@ jobs:
         uses: astral-sh/setup-uv@v7
       - name: Set up Python
         run: uv python install
-      - name: Lint YAML files
-        run: uvx yamllint .
+
+      - name: Install dependencies
+        if: ${{ inputs.uv_lint_group_name != '' }}
+        run: uv sync --group ${{ inputs.uv_lint_group_name }}
+      - name: Lint YAML files (with dependencies)
+        if: ${{ inputs.uv_lint_group_name != '' }}
+        run: uv run yamllint .
+
+      - name: Lint YAML files (standalone)
+        if: ${{ inputs.uv_lint_group_name == '' }}
+        run: uv tool run yamllint .
