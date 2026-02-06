@@ -1,70 +1,165 @@
-# Ministry of Justice Template Repository
+# Data Engineering GitHub Actions
 
-[![Ministry of Justice Repository Compliance Badge](https://github-community.service.justice.gov.uk/repository-standards/api/template-repository/badge)](https://github-community.service.justice.gov.uk/repository-standards/template-repository)
+[![Ministry of Justice Repository Compliance Badge](https://github-community.service.justice.gov.uk/repository-standards/api/data-engineering-github-actions/badge)](https://github-community.service.justice.gov.uk/repository-standards/data-engineering-github-actions)
 
-This template repository equips you with the default initial files required for a Ministry of Justice GitHub repository.
+A collection of reusable GitHub Actions workflows maintained by the Data Engineering team.
 
-## Included Files
+## Why use these workflows?
 
-The repository comes with the following preset files:
+Using these centralised reusable workflows provides consistent version management of GitHub Actions across all repositories. Using these ensures consistency of how these workflows are applied across the team. Additionally, if there is a security incident which requires an action version to be updated, the fix only needs to be applied in this repository, with all the reposotiries consuming the afflicted workflows automatically receiving the update.
 
-- LICENSE
-- .gitignore
-- CODEOWNERS
-- dependabot.yml
-- GitHub Actions example files
-- Ministry of Justice Compliance Badge (public repositories only)
+**Always reference `@main` when using these workflows** to ensure you receive the latest security patches and updates:
 
-## Setup Instructions
-
-Once you've created your repository using this template, ensure the following steps:
-
-### Update README
-
-Edit this README.md file to document your project accurately. Take the time to create a clear, engaging, and informative README.md file. Include information like what your project does, how to install and run it, how to contribute, and any other pertinent details.
-
-### Update repository description
-
-After you've created your repository, GitHub provides a brief description field that appears on the top of your repository's main page. This is a summary that gives visitors quick insight into the project. Using this field to provide a succinct overview of your repository is highly recommended.
-
-This description and your README.md will be one of the first things people see when they visit your repository. It's a good place to make a strong, concise first impression. Remember, this is often visible in search results on GitHub and search engines, so it's also an opportunity to help people discover your project.
-
-### Grant Team Permissions
-
-Assign permissions to the appropriate Ministry of Justice teams. Ensure at least one team is granted Admin permissions. Whenever possible, assign permissions to teams rather than individual users.
-
-Prefer to user GitHub Teams over individual access to repositories. Where appropriate, ensure GitHub Teams used are related to a Parent Team associated with a Business Unit to help ensure ownership can be easily identified.
-
-### Read about the GitHub repository standards
-
-Familiarise yourself with the Ministry of Justice GitHub Repository Standards. These standards ensure consistency, maintainability, and best practices across all our repositories.
-
-You can find the standards [here](https://github-community.service.justice.gov.uk/repository-standards/guidance).
-
-Please read and understand these standards thoroughly and enable them when you feel comfortable.
-
-### Modify the GitHub Standards Badge
-
-Once you've ensured that all the [GitHub Repository Standards](https://github-community.service.justice.gov.uk/repository-standards/guidance) have been applied to your repository, it's time to update the Ministry of Justice (MoJ) Compliance Badge located in the README file.
-
-The badge demonstrates that your repository is compliant with MoJ's standards.
-
-To update the badge, replace the `template-repository` in the badge URL with your repository's name. The badge URL should look like this:
-
-```markdown
-[![Ministry of Justice Repository Compliance Badge](https://github-community.service.justice.gov.uk/repository-standards/api/${your-repository-name}/badge)](https://github-community.service.justice.gov.uk/repository-standards/${your-reposistory-name})
+```yaml
+uses: ministryofjustice/data-engineering-github-actions/.github/workflows/reusable-example.yml@main
 ```
 
-**Please note** the badge will not function correctly if your repository is internal or private. In this case, you may remove the badge from your README.
+## Reusable Workflows
 
-### Update CODEOWNERS
+### List Open PRs
 
-(Optional) Modify the CODEOWNERS file to specify the teams or users authorized to approve pull requests.
+Posts a summary of open pull requests to a Slack channel, including how long each PR has been open.
 
-### Configure Dependabot
+**Inputs:**
 
-Adapt the dependabot.yml file to match your project's [dependency manager](https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#package-ecosystem) and to enable [automated pull requests for package updates](https://docs.github.com/en/code-security/supply-chain-security).
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `tag` | string | No | - | Label to filter PRs on |
+| `dry_run` | boolean | No | `false` | If true, prints PRs to logs instead of sending Slack alerts |
 
-### Dependency Review
+**Secrets:**
 
-If your repository is private with no GitHub Advanced Security license, remove the `.github/workflows/dependency-review.yml` file.
+| Name | Required | Description |
+|------|----------|-------------|
+| `slack_workflow_url` | Yes | Slack Incoming Webhook URL used to send alerts |
+
+**Usage:**
+
+```yaml
+name: List Open PRs
+on:
+  schedule:
+    - cron: "0 9 * * 1-5" # Weekdays at 9am
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run in dry-run mode (skip Slack alert)?"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  list-open-prs:
+    uses: ministryofjustice/data-engineering-github-actions/.github/workflows/reusable-list-open-prs.yml@main
+    with:
+      tag: "needs-review"
+      dry_run: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true' || false }}
+    secrets:
+      slack_workflow_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+```
+
+---
+
+### Pre-commit (Prek)
+
+Runs pre-commit hooks using [prek-action](https://github.com/j178/prek-action).
+
+**Usage:**
+
+```yaml
+name: Pre-commit
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  pre-commit:
+    uses: ministryofjustice/data-engineering-github-actions/.github/workflows/reusable-pre-commit.yml@main
+```
+
+---
+
+### Python Lint
+
+Lints Python code using [Ruff](https://github.com/astral-sh/ruff) for both linting and formatting checks.
+
+**Usage:**
+
+```yaml
+name: Python Lint
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  python-lint:
+    uses: ministryofjustice/data-engineering-github-actions/.github/workflows/reusable-python-lint.yml@main
+```
+
+---
+
+### Python Unit Test
+
+Runs Python unit tests using pytest with [uv](https://github.com/astral-sh/uv) for dependency management.
+
+**Inputs:**
+
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `uv_test_group_name` | string | No | `test` | Name of the uv dependency group containing test dependencies |
+
+**Usage:**
+
+```yaml
+name: Python Unit Test
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  python-unit-test:
+    uses: ministryofjustice/data-engineering-github-actions/.github/workflows/reusable-python-unit-test.yml@main
+    with:
+      uv_test_group_name: test
+```
+
+---
+
+### YAML Lint
+
+Lints YAML files using [yamllint](https://github.com/adrienverge/yamllint).
+
+**Inputs:**
+
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `uv_lint_group_name` | string | No | `""` | Optional uv dependency group. If provided, runs `uv sync` with this group before linting |
+
+**Usage:**
+
+```yaml
+name: YAML Lint
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  yaml-lint:
+    uses: ministryofjustice/data-engineering-github-actions/.github/workflows/reusable-yaml-lint.yml@main
+```
