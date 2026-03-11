@@ -19,10 +19,6 @@ jobs:
         if: ${{ inputs.include_terraform }}
         uses: hashicorp/setup-terraform@5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85 # v4.0.0
 
-      - name: Terraform init
-        if: ${{ inputs.include_terraform }}
-        run: terraform init -input=false -upgrade
-
       - name: Setup TFLint
         if: ${{ inputs.include_terraform }}
         uses: terraform-linters/setup-tflint@4cb9feea73331a35b422df102992a03a44a3bb33 # v6.2.1
@@ -42,3 +38,5 @@ jobs:
 
       - name: Run Prek
         uses: j178/prek-action@0bb87d7f00b0c99306c8bcb8b8beba1eb581c037 # v1.1.1
+        env:
+          TF_CLI_ARGS_init: -lockfile=readonly
