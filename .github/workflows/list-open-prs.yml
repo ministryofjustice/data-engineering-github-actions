@@ -10,3 +10,7 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/reusable-list-open-prs.yml
+    with:
+      dry_run: false
+    secrets:
+      slack_workflow_url: ${{ secrets.SLACK_WORKFLOW_URL }}
