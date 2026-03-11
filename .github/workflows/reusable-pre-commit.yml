@@ -1,13 +1,39 @@
 ---
 on:
   workflow_call:
+    inputs:
+      include_terraform:
+        description: 'Whether to include terraform pre-commit checks'
+        default: false
+        required: false
+        type: boolean
 
 jobs:
   prek:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install Terraform
+        if: inputs.include_terraform == true
+        uses: hashicorp/setup-terraform@5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85 # v4.0.0
+
+      - name: Terraform init
+        if: inputs.include_terraform == true
+        run: terraform init -input=false -upgrade
+
+      - name: Setup TFLint
+        if: inputs.include_terraform == true
+        uses: terraform-linters/setup-tflint@4cb9feea73331a35b422df102992a03a44a3bb33 # v6.2.1
+
+      - name: Install Trivy
+        if: inputs.include_terraform == true
+        uses: aquasecurity/setup-trivy@3fb12ec12f41e471780db15c232d5dd185dcb514 # v0.2.5
+
+      - name: Install Checkov
+        if: inputs.include_terraform == true
+        run: pipx install checkov
 
       - name: Run Prek
-        uses: j178/prek-action@v1
+        uses: j178/prek-action@0bb87d7f00b0c99306c8bcb8b8beba1eb581c037 # v1.1.1
