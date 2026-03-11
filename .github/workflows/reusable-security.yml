@@ -2,44 +2,44 @@
 name: Security checks
 
 on:
-    workflow_call:
+  workflow_call:
 
 jobs:
-    trufflehog:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v6
-              with:
-                  fetch-depth: 0
-            - name: Secret Scanning
-              uses: trufflesecurity/trufflehog@main
-              with:
-                  base: ""
-                  head: ${{ github.ref_name }}
-                  extra_args: --results=verified,unknown
+  trufflehog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - name: Secret Scanning
+        uses: trufflesecurity/trufflehog@6c05c4a00b91aa542267d8e32a8254774799d68d # v3.93.8
+        with:
+          base: ""
+          head: ${{ github.ref_name }}
+          extra_args: --results=verified,unknown
 
-    bandit:
-        runs-on: ubuntu-latest
+  bandit:
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: Perform Bandit Analysis
-              uses: PyCQA/bandit-action@v1
+    steps:
+      - name: Perform Bandit Analysis
+        uses: PyCQA/bandit-action@67a458d90fa11fb1463e91e7f4c8f068b5863c7f # v1.0.1
 
-    detect-secrets:
-        runs-on: ubuntu-latest
+  detect-secrets:
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v6
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-            - name: Set up Python
-              uses: actions/setup-python@v5
-              with:
-                  python-version: "3.13"
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.13"
 
-            - name: Install detect-secrets
-              run: pip install detect-secrets
+      - name: Install detect-secrets
+        run: pip install detect-secrets
 
-            - name: Scan for secrets
-              run: detect-secrets scan --all-files > .secrets.baseline --exclude-files '.git*'
+      - name: Scan for secrets
+        run: detect-secrets scan --all-files > .secrets.baseline --exclude-files '.git*'
