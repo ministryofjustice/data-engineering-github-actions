@@ -4,11 +4,6 @@ name: Security checks
 on:
     workflow_call:
 
-permissions:
-    security-events: write
-    contents: read
-    actions: read
-
 jobs:
     trufflehog:
         runs-on: ubuntu-latest
