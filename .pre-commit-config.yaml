@@ -49,7 +49,7 @@ repos:
       - id: terraform_tflint
       - id: terraform_validate
         args:
-          - --tf-init-args=-upgrade
+          - --tf-init-args=-lockfile=readonly
       - id: terraform_trivy
         args:
           - --args=--skip-dirs=**.terraform
