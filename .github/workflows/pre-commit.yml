@@ -1,6 +1,7 @@
 ---
 name: Check pre commit
 on:
+  push:
   pull_request:
     types: [edited, opened, reopened, synchronize]
 jobs:
@@ -9,5 +10,3 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/reusable-pre-commit.yml
-    with:
-      include_terraform: true
