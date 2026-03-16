@@ -29,9 +29,7 @@ def parse_prs(
     file = Path(file_path)
     prs: list[dict[str, Any]] = json.loads(file.read_text())
     for pr in prs:
-        pr_open_date = datetime.datetime.strptime(
-            pr["createdAt"], "%Y-%m-%dT%H:%M:%SZ"
-        ).astimezone(datetime.UTC)
+        pr_open_date = datetime.datetime.strptime(pr["createdAt"], "%Y-%m-%dT%H:%M:%SZ").astimezone(datetime.UTC)
         open_for = pr_open_date - now
         pr["openFor"] = humanize.naturaldelta(open_for)
     return prs
