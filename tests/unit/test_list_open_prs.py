@@ -21,9 +21,11 @@ class FakeResponse:
 @pytest.fixture
 def mock_send() -> Callable[..., SimpleNamespace]:
     """Mock send slack message success."""
+
     def _mock_send(*_args: object, **_kwargs: object) -> SimpleNamespace:
         """Mock send slack message success."""
         return SimpleNamespace(status_code=200, body="ok")
+
     return _mock_send
 
 
