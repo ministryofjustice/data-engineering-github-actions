@@ -20,9 +20,6 @@ jobs:
         uses: astral-sh/setup-uv@v7
 
       - name: Install the project
-        run: uv sync --all-extras --dev
-      - name: Install dependencies
-        run: pip install mypy
-
+        run: uv sync --all-extras --all-groups
       - name: Run mypy
-        run: mypy .
+        run: uv run mypy
