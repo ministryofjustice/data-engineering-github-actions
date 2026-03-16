@@ -5,6 +5,7 @@ import json
 from collections.abc import Callable
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 from slack_sdk.errors import SlackApiError
@@ -18,8 +19,8 @@ class FakeResponse:
         return {"error": "invalid_auth"}[key]
 
 
-@pytest.fixture
-def mock_send() -> Callable[..., SimpleNamespace]:
+@pytest.fixture(name="mock_send")
+def fix_mock_send() -> Callable[..., SimpleNamespace]:
     """Mock send slack message success."""
 
     def _mock_send(*_args: object, **_kwargs: object) -> SimpleNamespace:
@@ -29,8 +30,8 @@ def mock_send() -> Callable[..., SimpleNamespace]:
     return _mock_send
 
 
-@pytest.fixture
-def fake_prs_file(tmp_path: Path) -> tuple[Path, list[dict[str, any]]]:
+@pytest.fixture(name="fake_prs_file")
+def fix_fake_prs_file(tmp_path: Path) -> tuple[Path, list[dict[str, Any]]]:
     """Fake output PR file."""
     created_at = (datetime.datetime(2025, 9, 3, 12, 0, 0, tzinfo=datetime.UTC)).strftime("%Y-%m-%dT%H:%M:%SZ")
     prs_data = [
@@ -53,7 +54,7 @@ def _fake_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.usefixtures("_fake_env")
-def test_parse_prs(monkeypatch: pytest.MonkeyPatch, fake_prs_file: Path) -> None:
+def test_parse_prs(monkeypatch: pytest.MonkeyPatch, fake_prs_file: tuple[Path, list[dict[str, Any]]]) -> None:
     """Test parse PRs function."""
     import scripts.list_open_prs as lop
 

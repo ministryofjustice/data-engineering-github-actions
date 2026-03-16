@@ -5,6 +5,7 @@ import json
 import logging
 import os
 from pathlib import Path
+from typing import Any
 
 import humanize
 from slack_sdk.errors import SlackApiError
@@ -23,10 +24,10 @@ now = datetime.datetime.now(tz=datetime.UTC)
 
 def parse_prs(
     file_path: str = "prs.json",
-) -> dict[str, any]:
+) -> list[dict[str, Any]]:
     """Add length of time open to the PRs."""
     file = Path(file_path)
-    prs = json.loads(file.read_text())
+    prs: list[dict[str, Any]] = json.loads(file.read_text())
     for pr in prs:
         pr_open_date = datetime.datetime.strptime(pr["createdAt"], "%Y-%m-%dT%H:%M:%SZ").astimezone(datetime.UTC)
         open_for = pr_open_date - now
@@ -35,7 +36,7 @@ def parse_prs(
 
 
 def open_prs(
-    prs: list[dict],
+    prs: list[dict[str, Any]],
     repo: str = REPO_NAME,
 ) -> None:
     """Post message about open prs."""
