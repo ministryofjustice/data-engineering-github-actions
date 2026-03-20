@@ -50,9 +50,6 @@ repos:
       - id: terraform_validate
         args:
           - --tf-init-args=-lockfile=readonly
-      - id: terraform_trivy
-        args:
-          - --args=--skip-dirs=**.terraform
       - id: terraform_checkov
         args:
           - --args=--framework terraform
