@@ -20,6 +20,11 @@ repos:
         args: [--branch, main, --branch, master]
       - id: pretty-format-json
       - id: trailing-whitespace
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.4.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
   - repo: https://github.com/crate-ci/typos
     rev: v1.36.2
     hooks:
