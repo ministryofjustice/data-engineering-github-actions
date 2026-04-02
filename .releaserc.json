@@ -1,9 +1,11 @@
 {
-  "branches": ["main"],
-  "tagFormat": "v${version}",
+  "branches": [
+    "main"
+  ],
   "plugins": [
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
     "@semantic-release/github"
-  ]
+  ],
+  "tagFormat": "v${version}"
 }
