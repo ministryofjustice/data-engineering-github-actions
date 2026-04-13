@@ -8,7 +8,7 @@ dependencies = [
     "humanize>=4.13.0",
     "slack-sdk>=3.36.0",
     "typer>=0.17.3",
-    "checkov>=3.2.0"
+    "checkov>=3.2.517"
 ]
 
 [tool.ruff]
