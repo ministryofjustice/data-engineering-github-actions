@@ -374,7 +374,7 @@ wheels = [
 
 [[package]]
 name = "checkov"
-version = "3.2.513"
+version = "3.2.524"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiodns" },
@@ -405,6 +405,7 @@ dependencies = [
     { name = "networkx" },
     { name = "packageurl-python" },
     { name = "packaging" },
+    { name = "platformdirs" },
     { name = "prettytable" },
     { name = "pycep-parser" },
     { name = "pydantic" },
@@ -420,9 +421,9 @@ dependencies = [
     { name = "urllib3" },
     { name = "yarl" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/40/49/f90cf0052814bcc24aba0e8b2ad86f7baf2aa8ef33cf1ffaf1bf62a9c35e/checkov-3.2.513.tar.gz", hash = "sha256:2bf2698c2502986adc63f976b8a37756c897f8d6934608cd294842db422adec9", size = 991216, upload-time = "2026-03-27T14:44:47.933Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/74/bc/80db6da1c992ff1b56c7fb2314e19702eaf64810422c3d4b104a51bfd706/checkov-3.2.524.tar.gz", hash = "sha256:7b2a3e184bb28ee04787a888cc7d4c364bd548f5d82e36ea191a24c86f916c51", size = 996392, upload-time = "2026-04-20T08:18:13.766Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/45/b0/e06354c7546e106fe2969370f5f95a116f1040c929836247d70e37db6c90/checkov-3.2.513-py3-none-any.whl", hash = "sha256:1a55565bf9f7938c60a64e2b565b49eaa9833fd8022b3b2f5cae8742553a4c61", size = 2301148, upload-time = "2026-03-27T14:44:45.772Z" },
+    { url = "https://files.pythonhosted.org/packages/e4/ec/dae1e2017931c70a640a6e2b27529376adeb1cd42f43e28437311ee2d5b5/checkov-3.2.524-py3-none-any.whl", hash = "sha256:59d83543176d3b0a3b4651cf87c964c9f39f89f45c67243d52a4752eefc4e7bf", size = 2304474, upload-time = "2026-04-20T08:18:11.435Z" },
 ]
 
 [[package]]
@@ -534,7 +535,7 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "checkov", specifier = ">=3.2.0" },
+    { name = "checkov", specifier = ">=3.2.524" },
     { name = "humanize", specifier = ">=4.13.0" },
     { name = "slack-sdk", specifier = ">=3.36.0" },
     { name = "typer", specifier = ">=0.17.3" },
@@ -1191,6 +1192,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/fa/36/e27608899f9b8d4dff0617b2d9ab17ca5608956ca44461ac14ac48b44015/pathspec-1.0.4.tar.gz", hash = "sha256:0210e2ae8a21a9137c0d470578cb0e595af87edaa6ebf12ff176f14a02e0e645", size = 131200, upload-time = "2026-01-27T03:59:46.938Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ef/3c/2c197d226f9ea224a9ab8d197933f9da0ae0aac5b6e0f884e2b8d9c8e9f7/pathspec-1.0.4-py3-none-any.whl", hash = "sha256:fb6ae2fd4e7c921a165808a552060e722767cfa526f99ca5156ed2ce45a5c723", size = 55206, upload-time = "2026-01-27T03:59:45.137Z" },
+]
+
+[[package]]
+name = "platformdirs"
+version = "4.9.6"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/9f/4a/0883b8e3802965322523f0b200ecf33d31f10991d0401162f4b23c698b42/platformdirs-4.9.6.tar.gz", hash = "sha256:3bfa75b0ad0db84096ae777218481852c0ebc6c727b3168c1b9e0118e458cf0a", size = 29400, upload-time = "2026-04-09T00:04:10.812Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/75/a6/a0a304dc33b49145b21f4808d763822111e67d1c3a32b524a1baf947b6e1/platformdirs-4.9.6-py3-none-any.whl", hash = "sha256:e61adb1d5e5cb3441b4b7710bea7e4c12250ca49439228cc1021c00dcfac0917", size = 21348, upload-time = "2026-04-09T00:04:09.463Z" },
 ]
 
 [[package]]
