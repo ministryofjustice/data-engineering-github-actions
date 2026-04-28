@@ -5,6 +5,7 @@ repos:
     hooks:
       - id: check-added-large-files
       - id: check-case-conflict
+      - id: check-docstring-first
       - id: check-json
       - id: check-merge-conflict
       - id: check-symlinks
@@ -19,7 +20,10 @@ repos:
       - id: no-commit-to-branch
         args: [--branch, main, --branch, master]
       - id: pretty-format-json
+        args: [--autofix]
       - id: trailing-whitespace
+      - id: check-xml
+
   - repo: https://github.com/compilerla/conventional-pre-commit
     rev: v4.4.0
     hooks:
@@ -32,25 +36,47 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.1
     hooks:
-      - id: ruff-check
+      - id: ruff
+        types_or: [python, pyi, jupyter]
+        args: [--fix]
       - id: ruff-format
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.16.1"
+        types_or: [python, pyi, jupyter]
+
+  - repo: local
     hooks:
       - id: mypy
+        name: mypy
+        entry: uv run mypy .
+        language: system
+        pass_filenames: false
+        types: [python]
+
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0
     hooks:
       - id: detect-secrets
+
   - repo: https://github.com/PyCQA/bandit
     rev: 1.8.6
     hooks:
       - id: bandit
-        args: [-s, B101]
+        args:
+          - -s
+          - B101
+        additional_dependencies:
+          - pbr
+
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.37.1
     hooks:
       - id: yamllint
+
+  - repo: https://github.com/sqlfluff/sqlfluff
+    rev: 3.4.1
+    hooks:
+      - id: sqlfluff-lint
+        args: [--dialect, athena, --templater, jinja, --ignore, templating]
+
   - repo: https://github.com/antonbabenko/pre-commit-terraform
     rev: v1.104.0
     hooks:

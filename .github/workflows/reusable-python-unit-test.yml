@@ -4,7 +4,7 @@ on:
     inputs:
       uv_sync_groups:
         type: string
-        default: --all-groups
+        default: --all-extras --all-groups
       pytest_target:
         type: string
         default: ""
