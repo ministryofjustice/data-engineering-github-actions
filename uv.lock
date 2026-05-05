@@ -374,7 +374,7 @@ wheels = [
 
 [[package]]
 name = "checkov"
-version = "3.2.524"
+version = "3.2.525"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiodns" },
@@ -421,9 +421,9 @@ dependencies = [
     { name = "urllib3" },
     { name = "yarl" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/74/bc/80db6da1c992ff1b56c7fb2314e19702eaf64810422c3d4b104a51bfd706/checkov-3.2.524.tar.gz", hash = "sha256:7b2a3e184bb28ee04787a888cc7d4c364bd548f5d82e36ea191a24c86f916c51", size = 996392, upload-time = "2026-04-20T08:18:13.766Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fa/69/822f22584a401154fcecf5721425fc2d3c635b165bea5665ca6dacea651d/checkov-3.2.525.tar.gz", hash = "sha256:1f43be65c5ca42ebf02a9b73392c0a6569fecb07562c85ed0d51f59fef827521", size = 996557, upload-time = "2026-04-26T14:00:30.581Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e4/ec/dae1e2017931c70a640a6e2b27529376adeb1cd42f43e28437311ee2d5b5/checkov-3.2.524-py3-none-any.whl", hash = "sha256:59d83543176d3b0a3b4651cf87c964c9f39f89f45c67243d52a4752eefc4e7bf", size = 2304474, upload-time = "2026-04-20T08:18:11.435Z" },
+    { url = "https://files.pythonhosted.org/packages/57/c8/6bcdfb6881ddd9d12581c4369d606bde45721ffae474c84161e9b471173a/checkov-3.2.525-py3-none-any.whl", hash = "sha256:9c8cfa58cb15bca928d118d7194ae09dd80d6a0b2099f8fa3dace4594b701836", size = 2304717, upload-time = "2026-04-26T14:00:27.328Z" },
 ]
 
 [[package]]
@@ -535,7 +535,7 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "checkov", specifier = ">=3.2.524" },
+    { name = "checkov", specifier = ">=3.2.525" },
     { name = "humanize", specifier = ">=4.13.0" },
     { name = "slack-sdk", specifier = ">=3.36.0" },
     { name = "typer", specifier = ">=0.17.3" },
