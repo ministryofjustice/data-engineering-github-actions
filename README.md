@@ -84,6 +84,21 @@ jobs:
     uses: ministryofjustice/data-engineering-github-actions/.github/workflows/reusable-pre-commit.yml@main
 ```
 
+If using Terraform:
+
+1) Generate [cross-platform hashes](https://oneuptime.com/blog/post/2026-02-23-terraform-lock-file-cicd/) in the lock file to be able to run 'terraform validate' in the pre-commit GitHub Action. This is needed if you develop on macOS but CI/CD runs on GitHub Actions.
+
+```
+terraform providers lock -platform=linux_amd64
+```
+
+2) Include the below input with the reusable workflow (the default is set to false).
+
+```yaml
+    with:
+      include_terraform: true
+```
+
 ---
 
 ### Python Lint
