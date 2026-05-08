@@ -84,6 +84,21 @@ jobs:
     uses: ministryofjustice/data-engineering-github-actions/.github/workflows/reusable-pre-commit.yml@main
 ```
 
+If using Terraform:
+
+1) Generate [cross-platform hashes](https://oneuptime.com/blog/post/2026-02-23-terraform-lock-file-cicd/) in the lock file to be able to run 'terraform validate' in the pre-commit GitHub Action. This is needed if you develop on macOS but CI/CD runs on GitHub Actions.
+
+```
+terraform providers lock -platform=linux_amd64
+```
+
+2) Include the below input with the reusable workflow (the default is set to false).
+
+```yaml
+    with:
+      include_terraform: true
+```
+
 ---
 
 ### Python Lint
@@ -140,6 +155,27 @@ jobs:
 
 ---
 
+### Python Type Check
+
+Runs [mypy](https://github.com/python/mypy) - a static type checker for Python. mypy must be defined as a dependency in your `pyproject.toml`.
+
+**Usage:**
+
+```yaml
+name: Python type check
+on:
+    pull_request:
+        types: [edited, opened, reopened, synchronize]
+jobs:
+    python-type-check:
+        name: Python type check
+        permissions:
+            contents: read
+        uses: ./.github/workflows/reusable-python-type.yml
+```
+
+---
+
 ### YAML Lint
 
 Lints YAML files using [yamllint](https://github.com/adrienverge/yamllint).
@@ -165,3 +201,54 @@ jobs:
   yaml-lint:
     uses: ministryofjustice/data-engineering-github-actions/.github/workflows/reusable-yaml-lint.yml@main
 ```
+
+---
+
+### Dependency Review
+
+Scans for dependency changes, and will raise an error if any vulnerabilities or invalid licenses are being introduced. Uses the [dependency-review-action](https://github.com/actions/dependency-review-action) GitHub Action.
+
+**Usage:**
+
+```yaml
+name: Dependency Review
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions: {}
+
+jobs:
+  dependency-review:
+    name: Dependency Review
+    permissions:
+      contents: read
+    uses: ministryofjustice/data-engineering-github-actions/.github/workflows/reusable-dependency-review.yml@main
+```
+
+---
+
+### Security
+
+Scans for any secrets using [trufflehog](https://github.com/trufflesecurity/trufflehog), finds common security issues in Python code using [Bandit](https://github.com/pycqa/bandit), and detects secrets within a codebase using [detect-secrets](https://pypi.org/project/detect-secrets/).
+
+**Usage:**
+
+```yaml
+name: Security
+on:
+    pull_request:
+        types: [edited, opened, reopened, synchronize]
+jobs:
+    security:
+        name: Security
+        permissions:
+            security-events: write
+            contents: read
+            actions: read
+        uses: ministryofjustice data-engineering-github-actions/.github/workflows/reusable-security.yml@main
+```
+
+---
