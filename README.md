@@ -33,6 +33,10 @@ Posts a summary of open pull requests to a Slack channel, including how long eac
 |------|----------|-------------|
 | `slack_workflow_url` | Yes | Slack Incoming Webhook URL used to send alerts |
 
+This will require the creation of a Slack app (per domain/team) and incoming webhook - instructions for this can be found [here](https://docs.slack.dev/messaging/sending-messages-using-incoming-webhooks/).
+
+The incoming webhook url will need to be added as a [repository secret](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets).
+
 **Usage:**
 
 ```yaml
@@ -83,6 +87,12 @@ jobs:
   pre-commit:
     uses: ministryofjustice/data-engineering-github-actions/.github/workflows/reusable-pre-commit.yml@main
 ```
+
+**.pre-commit-config.yaml**
+
+Configuration [file](https://prek.j178.dev/configuration/) for prek. Example [here](.pre-commit-config.yaml).
+
+**Terraform**
 
 If using Terraform:
 
