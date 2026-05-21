@@ -8,7 +8,7 @@ dependencies = [
     "humanize>=4.13.0",
     "slack-sdk>=3.36.0",
     "typer>=0.25.1",
-    "checkov>=3.2.524"
+    "checkov>=3.2.528"
 ]
 
 [tool.ruff]
@@ -24,7 +24,7 @@ ignore = ["D203", "D213", "COM812"]
 
 [dependency-groups]
 dev = [
-    "mypy>=1.20.1",
+    "mypy>=2.1.0",
     "ruff>=0.15.12",
 ]
 test = [
