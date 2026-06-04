@@ -7,7 +7,7 @@ requires-python = ">=3.13"
 dependencies = [
     "humanize>=4.13.0",
     "slack-sdk>=3.36.0",
-    "typer>=0.25.1",
+    "typer>=0.26.3",
     "checkov>=3.2.528"
 ]
 
