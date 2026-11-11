@@ -4,7 +4,7 @@ on:
     inputs:
       uv_sync_groups:
         type: string
-        default: --all-extras --all-groups
+        default: --all-extras --all-groups --locked
       pytest_target:
         type: string
         default: ""
@@ -20,8 +20,6 @@ jobs:
         run: uv python install
       - name: Install the project
         run: uv sync ${{  inputs.uv_sync_groups  }}
-      - name: Ensure pytest-cov is available
-        run: uv pip install pytest-cov
       - name: Run tests
         run: uv run pytest ${{  inputs.pytest_target  }} -v --cov=src
           --cov-report=term-missing
