@@ -1,0 +1,347 @@
+---
+on:
+  workflow_call:
+    inputs:
+      clean-actions-runner:
+        type: boolean
+        required: false
+        default: true
+      container-file:
+        type: string
+        required: false
+        default: Dockerfile
+      recursive-plan:
+        type: string
+        required: false
+        default: .
+
+permissions: {}
+
+jobs:
+  get-all-dockerfiles:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.final.outputs.matrix }}
+    steps:
+      - name: Harden Runner
+        if: github.event.repository.private == false
+        id: harden_runner
+        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Discover Projects
+        if: ${{ inputs.recursive-plan != '.' }}
+        uses: mirceanton/action-folder-matrix@a6b303300a376b3db3f09ec6c991e2719e4ce076 # v3.0.14
+        id: scan
+        with:
+          path: './${{ inputs.recursive-plan }}'
+
+      - name: Return single project root
+        id: single
+        run: |
+          echo "matrix=[\".\"]" >> $GITHUB_OUTPUT
+
+      - name: Centralise output
+        id: final
+        run: |
+          if [[ "${{ inputs.recursive-plan }}" != "." ]]; then
+            echo "matrix=${{ steps.scan.outputs.matrix }}" >> $GITHUB_OUTPUT
+          else
+            echo "matrix=${{ steps.single.outputs.matrix }}" >> $GITHUB_OUTPUT
+          fi
+
+
+  grype-scan:
+    name: Grype Container Scan
+    needs: get-all-dockerfiles
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      security-events: write
+    strategy:
+      matrix: ${{ fromJson(needs.get-all-dockerfiles.outputs.matrix) }}
+    steps:
+      - name: Harden Runner
+        if: github.event.repository.private == false
+        id: harden_runner
+        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Clean Actions Runner
+        if: inputs.clean-actions-runner == true
+        id: clean_actions_runner
+        uses: ministryofjustice/action-clean-runner@390530713a326ddc099b2114f38dd0f2f8eac6da # v1.1.0
+        with:
+          confirm: true
+
+      - name: Generate .grype.yml Configuration
+        id: generate_grype_config
+        env:
+          CONTAINER_FILE: ${{ inputs.container-file }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          imageName=$(grep "^FROM" "${CONTAINER_FILE}" | cut -d' ' -f2 | cut -d':' -f1)
+
+          if [[ "${imageName}" == "ghcr.io/ministryofjustice/analytical-platform-"* ]]; then
+            imageRepository=${imageName#ghcr.io/}
+
+            downloadGrypeYml=$(gh api "repos/${imageRepository}/contents/.grype.yml" 2>/dev/null || true)
+            export downloadGrypeYml
+
+            downloadGrypeYmlStatus=$(jq -r '.status' <<< "${downloadGrypeYml}")
+            export downloadGrypeYmlStatus
+
+            if [[ "${downloadGrypeYmlStatus}" == "null" ]]; then
+              echo "Using .grype.yml from ${imageRepository} (default branch)"
+              jq -r '.sha' <<< "${downloadGrypeYml}" || true
+
+              echo ".grype.yml found, writing to file"
+              jq -r '.content' <<< "${downloadGrypeYml}" | base64 --decode > .base-grype.yml
+
+              if [[ ! -f .grype.yml ]]; then
+                echo ".grype.yml not found, using base as-is"
+                mv .base-grype.yml .grype.yml
+              else
+                echo ".grype.yml already exists, merging with base"
+                # shellcheck disable=SC2016
+                yq eval-all 'explode(.) as $item ireduce ({}; . *+ $item)' .base-grype.yml .grype.yml > merged-grype.yml
+                mv merged-grype.yml .grype.yml
+              fi
+
+            elif [[ "${downloadGrypeYmlStatus}" == "404" ]]; then
+              echo ".grype.yml not found in ${imageRepository}, using default values" # It's OK if we don't find one
+            else
+              echo "Error downloading .grype.yml"
+              exit 1
+            fi
+          else
+            echo "Image is not an Analytical Platform image, skipping .grype.yml download"
+          fi
+
+      - name: Build Container Image recursively
+        id: build-recursive
+        if: ${{ inputs.recursive-plan != '.' }}
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ./${{ inputs.recursive-plan }}/${{ matrix.directory }}
+          push: false
+          load: true
+          tags: ${{ github.sha }}
+
+      - name: Build Container Image recursively
+        id: build-non-recursive
+        if: ${{ inputs.recursive-plan == '.' }}
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          push: false
+          load: true
+          tags: ${{ github.sha }}
+
+      - name: Scan
+        id: scan
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        with:
+          image: ${{ github.sha }}
+          severity-cutoff: high
+          only-fixed: true
+          fail-build: false
+          output-format: sarif
+          output-file: result.sarif
+
+      - name: Upload SARIF
+        id: upload_sarif
+        uses: github/codeql-action/upload-sarif@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4.39.2
+        with:
+          sarif_file: result.sarif
+
+      - name: Process Scan Result
+        id: process_scan_result
+        shell: bash
+        run: |
+          print_findings() {
+            local title=$1
+            local findings=$2
+
+            if [[ -n "${findings}" ]]; then
+              echo "### ${title}"
+              echo ""
+              echo "${findings}"
+              echo ""
+            fi
+          }
+
+          SARIF=$(cat result.sarif)
+
+          # The SARIF format stores rules (vulnerability definitions) separately from results (findings).
+          # Build a RULE_SEVERITIES map of ruleId → NVD CVSS base score, then count findings by score band.
+          # The finding message text is rewritten to match the classified severity so the output is consistent.
+
+          RULE_SEVERITIES=$(echo "${SARIF}" | jq -c '
+            .runs[0].tool.driver.rules
+            | map({key: .id, value: (.properties["security-severity"] // "0" | tonumber)})
+            | from_entries
+          ')
+
+          CRITICAL_COUNT=$(echo "${SARIF}" | jq --argjson s "${RULE_SEVERITIES}" '
+            [.runs[0].results[] | select($s[.ruleId] >= 9.0)] | length
+          ')
+          HIGH_COUNT=$(echo "${SARIF}" | jq --argjson s "${RULE_SEVERITIES}" '
+            [.runs[0].results[] | select($s[.ruleId] >= 7.0 and $s[.ruleId] < 9.0)] | length
+          ')
+          TOTAL=$((CRITICAL_COUNT + HIGH_COUNT))
+
+          # Finally, it constructs a markdown report. If there are any findings, it includes a detailed section with links to advisories
+          # (if the ruleId contains a CVE or GHSA identifier) and fix version information extracted from the rule's help text.
+
+          SCAN_OUTPUT=$({
+            echo "# Container Scan Summary"
+            echo ""
+
+            if [[ ${TOTAL} -eq 0 ]]; then
+              echo "✅ No fixable high or critical vulnerabilities found."
+            else
+              echo "${CRITICAL_COUNT} critical, ${HIGH_COUNT} high."
+              echo ""
+              echo "## Detailed Findings"
+              echo ""
+
+              # get_findings min max severity — filters SARIF results by CVSS score band, rewrites the severity word
+              # in each finding's message to match the classified severity, and formats each as a markdown bullet.
+              get_findings() {
+                local min_score=$1
+                local max_score=$2
+                local severity=$3
+                echo "${SARIF}" | jq -r --argjson s "${RULE_SEVERITIES}" \
+                  --argjson min "${min_score}" --argjson max "${max_score}" \
+                  --arg severity "${severity}" '
+
+                  # 1. Build $fix_versions map: scans each rule'\''s help.text for a "Fix Version:" line and maps ruleId → first fix version
+
+                  (.runs[0].tool.driver.rules
+                    | map({
+                        key: .id,
+                        value: (
+                          .help.text
+                          | split("\n")
+                          | map(select(startswith("Fix Version: ")))
+                          | if length > 0 then .[0] | ltrimstr("Fix Version: ") | split(",") | first else "" end
+                        )
+                      })
+                    | from_entries) as $fix_versions
+
+                  # 2. advisory_line: formats one result — extracts a CVE/GHSA ID from the ruleId, links it to NVD or
+                  #    GitHub Advisories, and appends "(fixed in x.y.z)" if a fix version is known
+
+                  | def advisory_line:
+                      (try (.ruleId | capture("^(?<id>CVE-[0-9]+-[0-9]+|GHSA-[a-zA-Z0-9]+-[a-zA-Z0-9]+-[a-zA-Z0-9]+)") | .id) // .ruleId) as $id
+                      | (if ($id | startswith("CVE-")) then "https://nvd.nist.gov/vuln/detail/\($id)"
+                        elif ($id | startswith("GHSA-")) then "https://github.com/advisories/\($id)"
+                        else "" end) as $url
+                      | (($fix_versions[.ruleId] // "") | if . != "" then " (fixed in \(.)" else "" end) as $fix
+                      | (if (.message.text | test("^A [A-Za-z]+ vulnerability"))
+                         then (.message.text | sub("^A [A-Za-z]+ vulnerability"; "A \($severity) vulnerability"))
+                         else "A \($severity) vulnerability: \(.message.text)"
+                         end) as $text
+                      | if $url != "" then "- [\($id)](\($url)) - \($text)\($fix)"
+                        else "- \(.ruleId) - \($text)\($fix)"
+                        end;
+
+                  # 3. Filter + emit: stream results[], keep entries where CVSS score is >= min and < max, apply advisory_line to each
+
+                  .runs[0].results[]
+                  | select($s[.ruleId] >= $min and $s[.ruleId] < $max)
+                  | advisory_line
+                '
+              }
+
+              CRITICAL_FINDINGS=$(get_findings 9.0 10.1 "critical")
+              HIGH_FINDINGS=$(get_findings 7.0 9.0 "high")
+
+              print_findings "Critical" "${CRITICAL_FINDINGS}"
+              print_findings "High" "${HIGH_FINDINGS}"
+
+              echo "## Source"
+              echo ""
+              echo "<table>"
+              echo "<tr><td><strong>Actor</strong></td><td>@${GITHUB_ACTOR}</td></tr>"
+              echo "<tr><td><strong>Commit</strong></td><td><a href=\"https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}\"><code>${GITHUB_SHA}</code></a></td></tr>"
+              echo "<tr><td><strong>Workflow</strong></td><td><a href=\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\">View run</a></td></tr>"
+              echo "</table>"
+            fi
+          })
+
+          echo "${SCAN_OUTPUT}"
+          echo "${SCAN_OUTPUT}" >>"${GITHUB_STEP_SUMMARY}"
+          {
+            echo "scan-summary<<EOF"
+            echo "${SCAN_OUTPUT}"
+            echo "EOF"
+            echo "critical-count=${CRITICAL_COUNT}"
+            echo "high-count=${HIGH_COUNT}"
+          } >>"${GITHUB_OUTPUT}"
+
+      - name: Comment on Pull Request
+        id: comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          SCAN_SUMMARY: ${{ steps.process_scan_result.outputs.scan-summary }}
+        with:
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            })
+
+            const botComment = comments.find(comment => {
+              return comment.user.type === 'Bot' && comment.body.includes('Container Scan Summary')
+            })
+
+            const output = `${process.env.SCAN_SUMMARY}`;
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: output
+              })
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: output
+              })
+            }
+
+      - name: Fail Build on Findings
+        if: |
+          steps.process_scan_result.outputs.critical-count > 0 ||
+          steps.process_scan_result.outputs.high-count > 0
+        id: fail_build
+        shell: bash
+        env:
+          CRITICAL_COUNT: ${{ steps.process_scan_result.outputs.critical-count }}
+          HIGH_COUNT: ${{ steps.process_scan_result.outputs.high-count }}
+        run: |
+          echo "Build failed - found ${CRITICAL_COUNT} critical and ${HIGH_COUNT} high severity fixable vulnerabilities"
+          exit 1
