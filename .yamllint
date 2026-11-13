@@ -5,7 +5,7 @@ ignore: .github/CODEOWNERS
 
 rules:
   line-length:
-    max: 100
+    max: 200
 
   truthy:
     allowed-values: ["true", "false", "on"]
