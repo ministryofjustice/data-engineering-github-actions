@@ -22,6 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.final.outputs.matrix }}
+      container-file-path: ${{ steps.final.outputs.container-file-path }}
     permissions:
       contents: read
       pull-requests: write
@@ -47,20 +48,16 @@ jobs:
         with:
           path: './${{ inputs.recursive-plan }}'
 
-      - name: Return single project root
-        id: single
-        run: |
-          echo "matrix=[\".\"]" >> $GITHUB_OUTPUT
-
       - name: Centralise output
         id: final
         run: |
           if [[ "${{ inputs.recursive-plan }}" != "." ]]; then
             echo "matrix=${{ steps.scan.outputs.matrix }}" >> $GITHUB_OUTPUT
+            echo "container-file-path=${{ inputs.recursive-plan }}/${{ inputs.container-file }}" >> $GITHUB_OUTPUT
           else
-            echo "matrix=${{ steps.single.outputs.matrix }}" >> $GITHUB_OUTPUT
+            echo "matrix={\"directory\": [\".\"]}" >> $GITHUB_OUTPUT
+            echo "container-file-path=${{ inputs.container-file }}" >> $GITHUB_OUTPUT
           fi
-
 
   grype-scan:
     name: Grype Container Scan
@@ -71,7 +68,7 @@ jobs:
       pull-requests: write
       security-events: write
     strategy:
-      matrix: ${{ fromJson(needs.get-all-dockerfiles.outputs.matrix) }}
+      matrix: ${{ fromJson(needs.get-all-dockerfiles.outputs.container-file-path) }}
     steps:
       - name: Harden Runner
         if: github.event.repository.private == false
@@ -96,7 +93,7 @@ jobs:
       - name: Generate .grype.yml Configuration
         id: generate_grype_config
         env:
-          CONTAINER_FILE: ${{ inputs.container-file }}
+          CONTAINER_FILE: ${{ needs.get-all-dockerfiles.outputs.container-file-path }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
