@@ -68,7 +68,7 @@ jobs:
       pull-requests: write
       security-events: write
     strategy:
-      matrix: ${{ fromJson(needs.get-all-dockerfiles.outputs.container-file-path) }}
+      matrix: ${{ fromJson(needs.get-all-dockerfiles.outputs.matrix) }}
     steps:
       - name: Harden Runner
         if: github.event.repository.private == false
