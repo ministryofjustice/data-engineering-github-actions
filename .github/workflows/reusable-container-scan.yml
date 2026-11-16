@@ -52,11 +52,11 @@ jobs:
         id: final
         run: |
           if [[ "${{ inputs.recursive-plan }}" != "." ]]; then
-            echo "matrix=${{ steps.scan.outputs.matrix }}" >> $GITHUB_OUTPUT
-            echo "container-file-path=${{ inputs.recursive-plan }}/${{ inputs.container-file }}" >> $GITHUB_OUTPUT
+            MATRIX='${{ steps.scan.outputs.matrix }}'
+            TRANSFORMED_MATRIX=$(echo "${MATRIX}" | jq -c '{directory: .directory, container_file_path: (.directory | map("${{ inputs.recursive-plan }}/\(.)")), recursive: true}')
+            echo "matrix=${TRANSFORMED_MATRIX}" >> $GITHUB_OUTPUT
           else
-            echo "matrix={\"directory\": [\".\"]}" >> $GITHUB_OUTPUT
-            echo "container-file-path=${{ inputs.container-file }}" >> $GITHUB_OUTPUT
+            echo "matrix={\"directory\": [\".\"], \"container_file_path\": [\"${{ inputs.container-file }}\"], \"recursive\": false}" >> $GITHUB_OUTPUT
           fi
 
   grype-scan:
@@ -68,7 +68,7 @@ jobs:
       pull-requests: write
       security-events: write
     strategy:
-      matrix: ${{ fromJson(needs.get-all-dockerfiles.outputs.matrix) }}
+      matrix: ${{ fromJson(needs.get-all-dockerfiles.outputs.container-file-path) }}
     steps:
       - name: Harden Runner
         if: github.event.repository.private == false
