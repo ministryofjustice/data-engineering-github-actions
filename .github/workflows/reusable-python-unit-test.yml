@@ -16,7 +16,7 @@ on:
         default: "src"
       cov_fail_under:
         type: number
-        default: 95
+        default: 100
 jobs:
   python-unit-test:
     runs-on: ubuntu-latest
