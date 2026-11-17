@@ -8,18 +8,49 @@ on:
       pytest_target:
         type: string
         default: ""
+      use_cov:
+        type: boolean
+        default: true
+      cov_target:
+        type: string
+        default: "src"
+      cov_fail_under:
+        type: number
+        default: 95
 jobs:
   python-unit-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - name: Setup UV
-        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+
       - name: Set up Python
-        run: uv python install
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.14"
+
       - name: Install the project
         run: uv sync ${{  inputs.uv_sync_groups  }}
+
       - name: Run tests
-        run: uv run pytest ${{  inputs.pytest_target  }} -v --cov=src
-          --cov-report=term-missing
+        env:
+          PYTEST_TARGET: ${{ inputs.pytest_target }}
+          USE_COV: ${{ inputs.use_cov }}
+          COV_TARGET: ${{ inputs.cov_target }}
+          COV_FAIL_UNDER: ${{ inputs.cov_fail_under }}
+        run: |
+          pytest_args=(-v)
+          if [[ -n "$PYTEST_TARGET" ]]; then
+            pytest_args+=("$PYTEST_TARGET")
+          fi
+          if [[ "$USE_COV" == "true" ]]; then
+            pytest_args+=(
+              "--cov=$COV_TARGET"
+              "--cov-report=term-missing"
+              "--cov-fail-under=$COV_FAIL_UNDER"
+            )
+          fi
+          uv run --no-sync pytest "${pytest_args[@]}"
