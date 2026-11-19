@@ -1,0 +1,100 @@
+---
+on:
+  workflow_call:
+    secrets:
+      ECR_ROLE_TO_ASSUME:
+        required: true
+      KUBE_NAMESPACE:
+        required: true
+      KUBE_CLUSTER:
+        required: true
+      KUBE_CERT:
+        required: true
+      KUBE_TOKEN:
+        required: true
+      AWS_ROLE_ARN:
+        required: true
+    inputs:
+      environment:
+        description: Environment name
+        required: true
+        type: string
+jobs:
+  publish:
+    name: Publish to ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - name: Configure AWS creds
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502  # v4.0.2
+        with:
+          role-to-assume: ${{ secrets.ECR_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.ECR_REGION }}
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076  # v2.0.1
+        id: login-ecr
+      - name: Build and push Docker image
+        run: |
+          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
+          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+          IMAGE_TAG: ${{ github.sha }}
+      - name: Set short environment name
+        id: env-short
+        run: |
+          case "${{ inputs.environment }}" in
+            development)  echo "ENV_SHORT=dev" >> "$GITHUB_OUTPUT" ;;
+            preproduction) echo "ENV_SHORT=preprod" >> "$GITHUB_OUTPUT" ;;
+            production)    echo "ENV_SHORT=prod" >> "$GITHUB_OUTPUT" ;;
+            *)
+              echo "::error::Unknown or empty environment input: '${{ inputs.environment }}'"
+              exit 1
+              ;;
+          esac
+          case "${{ inputs.environment }}" in
+            production) echo "NON_PROD=''" >> "$GITHUB_OUTPUT" ;;
+            *) echo "NON_PROD=-non-prod" >> "$GITHUB_OUTPUT" ;;
+          esac
+      - name: Get deployment YAMLs
+        run: |
+          mkdir -p deployments/rendered
+          envsubst < deployments/templates/networkpolicy.yml > deployments/rendered/networkpolicy.yml
+          envsubst < deployments/templates/deployment.yml > deployments/rendered/deployment.yml
+          envsubst < deployments/templates/service.yml > deployments/rendered/service.yml
+          envsubst < deployments/templates/ingress.yml > deployments/rendered/ingress.yml
+
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+          IMAGE_TAG: ${{ github.sha }}
+          CRON_SCHEDULE: ${{ vars.CRON_SCHEDULE }}
+          ENV_SHORT: ${{ steps.env-short.outputs.ENV_SHORT }}
+          NAMESPACE: ${{ secrets.KUBE_NAMESPACE }}
+          APP_HOST: ${{ vars.APP_HOST }}
+          NON_PROD: ${{ steps.env-short.outputs.NON_PROD }}
+      - name: Deploy to namespace
+        run: |
+          set +x
+          echo "${{ secrets.KUBE_CERT }}" > ca.crt
+          kubectl config set-cluster ${KUBE_CLUSTER} --certificate-authority=./ca.crt --server=https://${KUBE_CLUSTER}
+          kubectl config set-credentials deploy-user --token=${{ secrets.KUBE_TOKEN }}
+          kubectl config set-context ${KUBE_CLUSTER} --cluster=${KUBE_CLUSTER} --user=deploy-user --namespace=${KUBE_NAMESPACE}
+          kubectl config use-context ${KUBE_CLUSTER}
+          kubectl -n ${KUBE_NAMESPACE} apply -f deployments/rendered/networkpolicy.yml
+          kubectl -n ${KUBE_NAMESPACE} apply -f deployments/rendered/service.yml
+          kubectl -n ${KUBE_NAMESPACE} apply -f deployments/rendered/ingress.yml
+          kubectl -n ${KUBE_NAMESPACE} apply -f deployments/rendered/deployment.yml
+        env:
+          KUBE_NAMESPACE: ${{ secrets.KUBE_NAMESPACE }}
+          KUBE_CLUSTER: ${{ secrets.KUBE_CLUSTER }}
+          IMAGE_TAG: ${{ github.sha }}
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+          ENV_SHORT: ${{ steps.env-short.outputs.ENV_SHORT }}
