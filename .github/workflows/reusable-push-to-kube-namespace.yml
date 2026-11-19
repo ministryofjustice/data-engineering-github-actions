@@ -31,7 +31,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
       - name: Configure AWS creds
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502  # v4.0.2
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 #v4.0.2
         with:
           role-to-assume: ${{ secrets.ECR_ROLE_TO_ASSUME }}
           aws-region: ${{ vars.ECR_REGION }}
@@ -65,7 +65,8 @@ jobs:
       - name: Get deployment YAMLs
         run: |
           mkdir -p deployments/rendered
-          envsubst < deployments/templates/networkpolicy.yml > deployments/rendered/networkpolicy.yml
+          envsubst < deployments/templates/networkpolicy.yml \
+          > deployments/rendered/networkpolicy.yml
           envsubst < deployments/templates/deployment.yml > deployments/rendered/deployment.yml
           envsubst < deployments/templates/service.yml > deployments/rendered/service.yml
           envsubst < deployments/templates/ingress.yml > deployments/rendered/ingress.yml
@@ -83,9 +84,11 @@ jobs:
         run: |
           set +x
           echo "${{ secrets.KUBE_CERT }}" > ca.crt
-          kubectl config set-cluster ${KUBE_CLUSTER} --certificate-authority=./ca.crt --server=https://${KUBE_CLUSTER}
+          kubectl config set-cluster ${KUBE_CLUSTER} \
+          --certificate-authority=./ca.crt --server=https://${KUBE_CLUSTER}
           kubectl config set-credentials deploy-user --token=${{ secrets.KUBE_TOKEN }}
-          kubectl config set-context ${KUBE_CLUSTER} --cluster=${KUBE_CLUSTER} --user=deploy-user --namespace=${KUBE_NAMESPACE}
+          kubectl config set-context ${KUBE_CLUSTER} \
+          --cluster=${KUBE_CLUSTER} --user=deploy-user --namespace=${KUBE_NAMESPACE}
           kubectl config use-context ${KUBE_CLUSTER}
           kubectl -n ${KUBE_NAMESPACE} apply -f deployments/rendered/networkpolicy.yml
           kubectl -n ${KUBE_NAMESPACE} apply -f deployments/rendered/service.yml
