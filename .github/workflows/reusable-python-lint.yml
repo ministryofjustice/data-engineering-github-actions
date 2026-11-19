@@ -1,12 +1,20 @@
 ---
 on:
   workflow_call:
+    inputs:
+      uv_sync_groups:
+        type: string
+        default: --all-extras --all-groups --locked
 jobs:
   ruff:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - name: Install uv
-        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
-      - run: uv run --locked ruff check
-      - run: uv run --locked ruff format --check
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+      - name: Install the project
+        run: uv sync ${{ inputs.uv_sync_groups }}
+      - name: Run Ruff checks
+        run: uv run --no-sync ruff check
+      - name: Check formatting
+        run: uv run --no-sync ruff format --check

@@ -88,9 +88,9 @@ jobs:
     uses: ministryofjustice/data-engineering-github-actions/.github/workflows/reusable-pre-commit.yml@main
 ```
 
-**.pre-commit-config.yaml**
+**prek.toml**
 
-Configuration [file](https://prek.j178.dev/configuration/) for prek. Example [here](.pre-commit-config.yaml).
+Configuration [file](https://prek.j178.dev/configuration/) for prek. Example [here](prek.toml).
 
 **Terraform**
 
