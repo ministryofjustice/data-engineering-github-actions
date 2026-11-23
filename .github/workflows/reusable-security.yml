@@ -7,6 +7,10 @@ on:
       uv_sync_groups:
         type: string
         default: --all-extras --all-groups --locked
+      bandit_extra_excludes:
+        description: Comma-separated paths or glob patterns to exclude in addition to the defaults
+        type: string
+        default: ""
 
 jobs:
   trufflehog:
@@ -43,7 +47,19 @@ jobs:
         run: uv sync ${{ inputs.uv_sync_groups }}
 
       - name: Perform Bandit Analysis
-        run: uv run --no-sync bandit -r -s B101 .
+        env:
+          BANDIT_EXTRA_EXCLUDES: ${{ inputs.bandit_extra_excludes }}
+        run: |
+          exclusions='.svn,CVS,.bzr,.hg,.git,__pycache__,.tox,.eggs,*.egg'
+          exclusions+=',*/.venv/*,*/venv/*,*/.env/*,*/env/*,*/.venvs/*,*/virtualenv/*,*/.virtualenv/*'
+          if [[ -n "$BANDIT_EXTRA_EXCLUDES" ]]; then
+            if [[ "$BANDIT_EXTRA_EXCLUDES" =~ (^|,)[[:space:]]*(,|$) ]]; then
+              echo "::error::bandit_extra_excludes must not contain empty patterns"
+              exit 1
+            fi
+            exclusions+=",$BANDIT_EXTRA_EXCLUDES"
+          fi
+          uv run --no-sync bandit -r -s B101 --exclude "$exclusions" .
 
   detect-secrets:
     name: Detect secrets against baseline
