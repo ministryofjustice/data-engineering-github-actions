@@ -10,6 +10,8 @@ dependencies = [
     "typer>=0.26.7",
     "slack-sdk>=3.42.0",
     "pytest-cov>=7.1.0",
+    "bandit>=1.9.4",
+    "detect-secrets>=1.5.0",
 ]
 [dependency-groups]
 dev = [
@@ -29,7 +31,6 @@ line-length = 120
 
 [tool.ruff.lint]
 select = ["ALL"]
-# Remove warnings
 ignore = ["D203", "D213", "COM812"]
 
 [tool.ruff.lint.per-file-ignores]
