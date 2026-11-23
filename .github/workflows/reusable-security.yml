@@ -43,7 +43,7 @@ jobs:
         run: uv sync ${{ inputs.uv_sync_groups }}
 
       - name: Perform Bandit Analysis
-        run: python -m bandit -r -s B101 .
+        run: uv run --no-sync bandit -r -s B101 .
 
   detect-secrets:
     name: Detect secrets against baseline
@@ -66,4 +66,4 @@ jobs:
         run: uv sync ${{ inputs.uv_sync_groups }}
 
       - name: Check for new secrets
-        run: git ls-files -z | xargs -0 detect-secrets-hook --baseline .secrets.baseline
+        run: git ls-files -z | xargs -0 uv run --no-sync detect-secrets-hook --baseline .secrets.baseline
