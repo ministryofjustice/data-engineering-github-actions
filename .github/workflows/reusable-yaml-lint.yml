@@ -24,8 +24,5 @@ jobs:
       - name: Install the project
         run: uv sync ${{  inputs.uv_sync_groups  }}
 
-      - name: Lint YAML files (with dependencies)
+      - name: Lint YAML files
         run: uv run yamllint .
-
-      - name: Lint YAML files (standalone)
-        run: uv tool run yamllint .
