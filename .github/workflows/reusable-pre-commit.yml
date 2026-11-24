@@ -37,9 +37,5 @@ jobs:
       - name: Install the project
         run: uv sync ${{ inputs.uv_sync_groups }}
 
-      - name: Install Checkov
-        if: ${{ inputs.include_terraform }}
-        run: pipx install checkov
-
       - name: Run Prek
         uses: j178/prek-action@44924fe9ef4a6f88253c4b6b1bf11c689d3ce53d  # v3.1.0

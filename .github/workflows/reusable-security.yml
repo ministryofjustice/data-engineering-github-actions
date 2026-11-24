@@ -3,6 +3,14 @@ name: Security checks
 
 on:
   workflow_call:
+    inputs:
+      uv_sync_groups:
+        type: string
+        default: --all-extras --all-groups --locked
+      bandit_extra_excludes:
+        description: Comma-separated paths or glob patterns to exclude in addition to the defaults
+        type: string
+        default: ""
 
 jobs:
   trufflehog:
@@ -32,10 +40,26 @@ jobs:
         with:
           python-version: "3.14"
 
-      - name: Install Bandit
-        run: python -m pip install bandit
+      - name: Install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+
+      - name: Install the project
+        run: uv sync ${{ inputs.uv_sync_groups }}
+
       - name: Perform Bandit Analysis
-        run: python -m bandit -r -s B101 .
+        env:
+          BANDIT_EXTRA_EXCLUDES: ${{ inputs.bandit_extra_excludes }}
+        run: |
+          exclusions='.svn,CVS,.bzr,.hg,.git,__pycache__,.tox,.eggs,*.egg'
+          exclusions+=',*/.venv/*,*/venv/*,*/.env/*,*/env/*,*/.venvs/*,*/virtualenv/*,*/.virtualenv/*'
+          if [[ -n "$BANDIT_EXTRA_EXCLUDES" ]]; then
+            if [[ "$BANDIT_EXTRA_EXCLUDES" =~ (^|,)[[:space:]]*(,|$) ]]; then
+              echo "::error::bandit_extra_excludes must not contain empty patterns"
+              exit 1
+            fi
+            exclusions+=",$BANDIT_EXTRA_EXCLUDES"
+          fi
+          uv run --no-sync bandit -r -s B101 --exclude "$exclusions" .
 
   detect-secrets:
     name: Detect secrets against baseline
@@ -51,8 +75,11 @@ jobs:
         with:
           python-version: "3.14"
 
-      - name: Install detect-secrets
-        run: python -m pip install detect-secrets
+      - name: Install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+
+      - name: Install the project
+        run: uv sync ${{ inputs.uv_sync_groups }}
 
       - name: Check for new secrets
-        run: git ls-files -z | xargs -0 detect-secrets-hook --baseline .secrets.baseline
+        run: git ls-files -z | xargs -0 uv run --no-sync detect-secrets-hook --baseline .secrets.baseline

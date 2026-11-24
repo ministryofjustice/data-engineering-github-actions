@@ -5,10 +5,9 @@ ignore: |
   .venv/
   venv/
 
-
 rules:
   line-length:
-    max: 100
+    max: 120
 
   truthy:
     allowed-values: ["true", "false", "on"]
