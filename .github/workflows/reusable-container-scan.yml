@@ -78,6 +78,7 @@ jobs:
     needs: get-all-dockerfiles
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: read
       pull-requests: write
       security-events: write
