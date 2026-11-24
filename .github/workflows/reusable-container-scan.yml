@@ -49,16 +49,32 @@ jobs:
 
       - name: Centralise output
         id: final
+        env:
+          RECURSIVE_PLAN: ${{ inputs.recursive-plan }}
+          CONTAINER_FILE: ${{ inputs.container-file }}
+          DISCOVERED_MATRIX: ${{ steps.scan.outputs.matrix }}
+        shell: bash
         run: |
-          if [[ "${{ inputs.recursive-plan }}" != "." ]]; then
-            MATRIX='${{ steps.scan.outputs.matrix }}'
-            echo "matrix=${MATRIX}" >> $GITHUB_OUTPUT
+          if [[ "${RECURSIVE_PLAN}" != "." ]]; then
+            MATRIX=$(jq -cse --arg root "${RECURSIVE_PLAN}" --arg file "${CONTAINER_FILE}" '
+              if length != 1 then error("Expected one discovery matrix") else .[0] end
+              | if (.directory | type) != "array" or (.directory | length) == 0 then
+                error("No project directories discovered")
+              else
+                {include: [.directory[] | {
+                  context: ($root + "/" + .),
+                  container_file: ($root + "/" + . + "/" + $file)
+                }]}
+              end
+            ' <<< "${DISCOVERED_MATRIX}")
           else
-            echo "matrix={\"directory\": [\".\"], \"recursive\": false}" >> $GITHUB_OUTPUT
+            MATRIX=$(jq -cn --arg file "${CONTAINER_FILE}" \
+              '{include: [{context: ".", container_file: $file}]}')
           fi
+          echo "matrix=${MATRIX}" >> "${GITHUB_OUTPUT}"
 
   grype-scan:
-    name: Grype Container Scan
+    name: Grype Container Scan (${{ matrix.context }})
     needs: get-all-dockerfiles
     runs-on: ubuntu-latest
     permissions:
@@ -66,6 +82,7 @@ jobs:
       pull-requests: write
       security-events: write
     strategy:
+      fail-fast: false
       matrix: ${{ fromJson(needs.get-all-dockerfiles.outputs.matrix) }}
     steps:
       - name: Harden Runner
@@ -91,7 +108,7 @@ jobs:
       - name: Generate .grype.yml Configuration
         id: generate_grype_config
         env:
-          CONTAINER_FILE: ${{ needs.get-all-dockerfiles.outputs.matrix }}
+          CONTAINER_FILE: ${{ matrix.container_file }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
@@ -133,22 +150,12 @@ jobs:
             echo "Image is not an Analytical Platform image, skipping .grype.yml download"
           fi
 
-      - name: Build Container Image recursively
-        id: build-recursive
-        if: ${{ inputs.recursive-plan != '.' }}
+      - name: Build Container Image
+        id: build
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
-          context: ./${{ inputs.recursive-plan }}/${{ matrix.directory }}
-          push: false
-          load: true
-          tags: ${{ github.sha }}
-
-      - name: Build Container Image recursively
-        id: build-non-recursive
-        if: ${{ inputs.recursive-plan == '.' }}
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        with:
-          context: .
+          context: ${{ matrix.context }}
+          file: ${{ matrix.container_file }}
           push: false
           load: true
           tags: ${{ github.sha }}
@@ -169,6 +176,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4.39.2
         with:
           sarif_file: result.sarif
+          category: container-scan/${{ matrix.context }}
 
       - name: Process Scan Result
         id: process_scan_result
@@ -302,6 +310,7 @@ jobs:
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           SCAN_SUMMARY: ${{ steps.process_scan_result.outputs.scan-summary }}
+          SCAN_CONTEXT: ${{ matrix.context }}
         with:
           script: |
             const { data: comments } = await github.rest.issues.listComments({
@@ -310,11 +319,17 @@ jobs:
               issue_number: context.issue.number,
             })
 
-            const botComment = comments.find(comment => {
-              return comment.user.type === 'Bot' && comment.body.includes('Container Scan Summary')
-            })
+            const marker = `<!-- container-scan:${process.env.SCAN_CONTEXT} -->`;
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' && (
+                comment.body.includes(marker) ||
+                (process.env.SCAN_CONTEXT === '.' &&
+                  comment.body.includes('Container Scan Summary') &&
+                  !comment.body.includes('<!-- container-scan:'))
+              )
+            );
 
-            const output = `${process.env.SCAN_SUMMARY}`;
+            const output = `${marker}\n# Container: ${process.env.SCAN_CONTEXT}\n\n${process.env.SCAN_SUMMARY}`;
 
             if (botComment) {
               await github.rest.issues.updateComment({
