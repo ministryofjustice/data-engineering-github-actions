@@ -22,7 +22,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.final.outputs.matrix }}
-      container-file-path: ${{ steps.final.outputs.container-file-path }}
     permissions:
       contents: read
       pull-requests: write
@@ -53,10 +52,9 @@ jobs:
         run: |
           if [[ "${{ inputs.recursive-plan }}" != "." ]]; then
             MATRIX='${{ steps.scan.outputs.matrix }}'
-            TRANSFORMED_MATRIX=$(echo "${MATRIX}" | jq -c '{directory: .directory, container_file_path: (.directory | map("${{ inputs.recursive-plan }}/\(.)")), recursive: true}')
-            echo "matrix=${TRANSFORMED_MATRIX}" >> $GITHUB_OUTPUT
+            echo "matrix=${MATRIX}" >> $GITHUB_OUTPUT
           else
-            echo "matrix={\"directory\": [\".\"], \"container_file_path\": [\"${{ inputs.container-file }}\"], \"recursive\": false}" >> $GITHUB_OUTPUT
+            echo "matrix={\"directory\": [\".\"], \"recursive\": false}" >> $GITHUB_OUTPUT
           fi
 
   grype-scan:
@@ -93,7 +91,7 @@ jobs:
       - name: Generate .grype.yml Configuration
         id: generate_grype_config
         env:
-          CONTAINER_FILE: ${{ needs.get-all-dockerfiles.outputs.container-file-path }}
+          CONTAINER_FILE: ${{ needs.get-all-dockerfiles.outputs.matrix }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
