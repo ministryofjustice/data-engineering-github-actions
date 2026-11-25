@@ -88,9 +88,9 @@ jobs:
     uses: ministryofjustice/data-engineering-github-actions/.github/workflows/reusable-pre-commit.yml@main
 ```
 
-**.pre-commit-config.yaml**
+**prek.toml**
 
-Configuration [file](https://prek.j178.dev/configuration/) for prek. Example [here](.pre-commit-config.yaml).
+Configuration [file](https://prek.j178.dev/configuration/) for prek. Example [here](prek.toml).
 
 **Terraform**
 
@@ -258,7 +258,12 @@ jobs:
             security-events: write
             contents: read
             actions: read
-        uses: ministryofjustice data-engineering-github-actions/.github/workflows/reusable-security.yml@main
+        uses: ministryofjustice/data-engineering-github-actions/.github/workflows/reusable-security.yml@main
+        with:
+            bandit_extra_excludes: "*/generated/*,*/vendor/*"
 ```
+
+The optional `bandit_extra_excludes` input adds comma-separated paths or glob patterns to the workflow's common
+Bandit exclusions, including virtual environment directories. Omit it if no additional exclusions are needed.
 
 ---

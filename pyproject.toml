@@ -9,24 +9,30 @@ dependencies = [
     "checkov>=3.3.1",
     "typer>=0.26.7",
     "slack-sdk>=3.42.0",
+    "pytest-cov>=7.1.0",
+    "bandit>=1.9.4",
+    "detect-secrets>=1.5.0",
+    "yamllint>=1.38.0",
 ]
+[dependency-groups]
+dev = [
+    "mypy>=2.1.0",
+    "prek>=0.5.10",
+    "ruff>=0.16.0",
+]
+test = [
+    "pytest>=9.1.0",
+]
+
+[tool.uv]
+exclude-newer = "7 days"
 
 [tool.ruff]
 line-length = 120
 
 [tool.ruff.lint]
 select = ["ALL"]
-# Remove warnings
 ignore = ["D203", "D213", "COM812"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**.py" = ["S101", "PLC0415"]
-
-[dependency-groups]
-dev = [
-    "mypy>=2.1.0",
-    "ruff>=0.15.17",
-]
-test = [
-    "pytest>=9.1.0",
-]

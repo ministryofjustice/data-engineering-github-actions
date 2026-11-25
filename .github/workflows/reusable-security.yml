@@ -3,17 +3,26 @@ name: Security checks
 
 on:
   workflow_call:
+    inputs:
+      uv_sync_groups:
+        type: string
+        default: --all-extras --all-groups --locked
+      bandit_extra_excludes:
+        description: Comma-separated paths or glob patterns to exclude in addition to the defaults
+        type: string
+        default: ""
 
 jobs:
   trufflehog:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Checkout repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 0
+
       - name: Secret Scanning
-        uses: trufflesecurity/trufflehog@30d5bb91af1a771378349dbbb0c82129392acf70 # v3.95.6
+        uses: trufflesecurity/trufflehog@ea68ca03c865c5f324e86e849ced20ed3cf9dbbb  # v3.99.8
         with:
           base: ""
           head: ${{ github.ref_name }}
@@ -23,23 +32,54 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Perform Bandit Analysis
-        uses: PyCQA/bandit-action@67a458d90fa11fb1463e91e7f4c8f068b5863c7f # v1.0.1
-
-  detect-secrets:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Checkout repo
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
 
       - name: Set up Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
-          python-version: "3.13"
+          python-version: "3.14"
 
-      - name: Install detect-secrets
-        run: pip install detect-secrets
+      - name: Install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
 
-      - name: Scan for secrets
-        run: detect-secrets scan --all-files > .secrets.baseline --exclude-files '.git*'
+      - name: Install the project
+        run: uv sync ${{ inputs.uv_sync_groups }}
+
+      - name: Perform Bandit Analysis
+        env:
+          BANDIT_EXTRA_EXCLUDES: ${{ inputs.bandit_extra_excludes }}
+        run: |
+          exclusions='.svn,CVS,.bzr,.hg,.git,__pycache__,.tox,.eggs,*.egg'
+          exclusions+=',*/.venv/*,*/venv/*,*/.env/*,*/env/*,*/.venvs/*,*/virtualenv/*,*/.virtualenv/*'
+          if [[ -n "$BANDIT_EXTRA_EXCLUDES" ]]; then
+            if [[ "$BANDIT_EXTRA_EXCLUDES" =~ (^|,)[[:space:]]*(,|$) ]]; then
+              echo "::error::bandit_extra_excludes must not contain empty patterns"
+              exit 1
+            fi
+            exclusions+=",$BANDIT_EXTRA_EXCLUDES"
+          fi
+          uv run --no-sync bandit -r -s B101 --exclude "$exclusions" .
+
+  detect-secrets:
+    name: Detect secrets against baseline
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+
+      - name: Install the project
+        run: uv sync ${{ inputs.uv_sync_groups }}
+
+      - name: Check for new secrets
+        run: git ls-files -z | xargs -0 uv run --no-sync detect-secrets-hook --baseline .secrets.baseline

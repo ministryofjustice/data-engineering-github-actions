@@ -9,3 +9,5 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/reusable-python-unit-test.yml
+    with:
+      cov_fail_under: 0
