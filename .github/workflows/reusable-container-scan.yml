@@ -12,7 +12,7 @@ on:
         default: Dockerfile
       recursive-plan:
         type: string
-        required: false
+        required: true
         default: .
 
 permissions: {}
